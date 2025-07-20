@@ -26,18 +26,16 @@
 
 [Github 저장소를 복제](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)하세요. 명령은 [ssh 또는 https](https://graphite.dev/guides/git-clone-ssh-vs-https) 중 어떤 방식으로 복제할지 선택하는지에 따라 달라집니다.
 
-|옵션|명령어|
-|---|---|
-|ssh|`git clone git@github.com:dagster-io/project-dagster-university.git`|
-|https|`git clone https://github.com/dagster-io/project-dagster-university.git`|
+| 옵션    | 명령어                                                                      |
+| ----- | ------------------------------------------------------------------------ |
+| ssh   | `git clone git@github.com:dagster-io/project-dagster-university.git`     |
+| https | `git clone https://github.com/dagster-io/project-dagster-university.git` |
 
 Dagster University 프로젝트를 복제한 후, 저장소 내의 특정 코스 디렉토리로 이동하세요. 모든 코스는 `dagster_university`폴더 안에 있습니다.
 
 예를 들어, "Dagster Essentials"를 완료하는 경우 해당 디렉토리로 이동하세요.
 
-Bash
-
-```
+```bash
 cd dagster_university/dagster_essentials
 ```
 
@@ -49,9 +47,7 @@ cd dagster_university/dagster_essentials
 
 아직 `uv`가 설치되어 있지 않다면 다음 명령으로 설치할 수 있습니다.
 
-Bash
-
-```
+```bash
 brew install uv
 ```
 
@@ -59,9 +55,7 @@ brew install uv
 
 [uv](https://docs.astral.sh/uv/)로 Python 의존성을 설치하려면 코스별 디렉토리에서 다음을 실행하세요.
 
-Bash
-
-```
+```bash
 uv sync
 ```
 
@@ -78,9 +72,7 @@ uv sync
 
 [pip](https://pypi.org/project/pip/)로 Python 의존성을 설치하려면 코스별 디렉토리에서 다음을 실행하세요.
 
-Bash
-
-```
+```bash
 python3 -m venv .venv
 ```
 
@@ -93,9 +85,7 @@ python3 -m venv .venv
 
 필요한 의존성을 설치하려면 다음을 실행하세요.
 
-Bash
-
-```
+```bash
 pip install -e ".[dev]"
 ```
 
@@ -103,9 +93,7 @@ pip install -e ".[dev]"
 
 Dagster Essentials 과정의 파일에 대해 잠시 이야기해 봅시다. `dagster_university/dagster_essentials` 디렉토리는 다음과 같아야 합니다.
 
-Bash
-
-```
+```bash
 dagster_university/dagster_essentials
 .
 ├── dagster_cloud.yaml
