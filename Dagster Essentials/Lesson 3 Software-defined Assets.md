@@ -49,9 +49,7 @@ Dagster에서 핵심 빌딩 블록은 **소프트웨어 정의 자산(SDA)**입�
 
 **이를 보여주기 위해 쿠키 예제를 살펴보겠습니다.** 다음 코드는 상위 `dry_ingredients` 및 `wet_ingredients` 자산에 의존하는 `cookie_dough` 자산을 생성합니다.
 
-Python
-
-```
+```python
 @dg.asset
 def cookie_dough(dry_ingredients, wet_ingredients):
     return dry_ingredients + wet_ingredients
@@ -97,9 +95,7 @@ Dagster 1.11에 도입된 [Dagster Components](https://docs.dagster.io/guides/b
 
 **참고:** `dg` 명령은 Dagster 프로젝트 특정 코스(이 경우 `dagster_university/dagster_essentials` 내)에서 실행해야 합니다. `dg` 명령은 프로젝트 내 어디에서든 실행할 수 있습니다.
 
-Bash
-
-```
+```bash
 dg scaffold defs dagster.asset assets/trips.py
 ```
 
@@ -122,9 +118,7 @@ Code snippet
 
 `dg`를 사용하여 프로젝트를 스캐폴딩하면 파일이 올바른 위치에 배치됩니다. 또한 `dg`를 사용하여 모든 것이 올바르게 구성되었는지 확인할 수 있습니다.
 
-Bash
-
-```
+```bash
 > dg check defs
 All components validated successfully.
 All definitions loaded successfully.
@@ -194,9 +188,7 @@ def taxi_trips_file() -> None:
 
 자산을 다시 확인하기 위해 `dg`를 사용할 수 있습니다.
 
-Bash
-
-```
+```bash
 > dg check defs
 All components validated successfully.
 All definitions loaded successfully.
