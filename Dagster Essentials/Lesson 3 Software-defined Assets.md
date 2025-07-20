@@ -140,65 +140,56 @@ All definitions loaded successfully.
     
 2. `trips.py` 파일 내에서 스캐폴딩에서 생성된 코드를 제거하고 다음 임포트로 바꿉니다.
     
-    Python
-    
-    ```
-    import requests
-    from dagster_essentials.defs.assets import constants
-    ```
+```python
+import requests
+from dagster_essentials.defs.assets import constants
+```
     
 3. 임포트 아래에 입력이 없고 아무것도 반환하지 않는 (타입 주석 `None` 포함) 함수를 정의해 봅시다. `taxi_trips_file`이라는 이 함수를 생성하는 다음 코드를 추가하세요.
     
-    Python
+```python
+def taxi_trips_file() -> None:
+    """
+    The raw parquet files for the taxi trips dataset. Sourced from the NYC Open Data portal.
+    """
+    month_to_fetch = '2023-03'
+    raw_trips = requests.get(
+        f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month_to_fetch}.parquet"
+    )
     
-    ```
-    def taxi_trips_file() -> None:
-        """
-          The raw parquet files for the taxi trips dataset. Sourced from the NYC Open Data portal.
-        """
-        month_to_fetch = '2023-03'
-        raw_trips = requests.get(
-            f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month_to_fetch}.parquet"
-        )
-    
-        with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch), "wb") as output_file:
-            output_file.write(raw_trips.content)
-    ```
+    with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch), "wb") as output_file:
+        output_file.write(raw_trips.content)
+```
     
 4. 함수를 Dagster의 자산으로 전환하려면 두 가지를 수행해야 합니다.
     
     1. Dagster 라이브러리를 임포트합니다.
         
-        Python
-        
-        ```
-        import dagster as dg
-        ```
-        
-    2. `taxi_trips_file` 함수 앞에 `@dg.asset` 데코레이터를 추가합니다. 이 시점에서 코드는 다음과 같아야 합니다.
-        
-        Python
-        
-        ```
-        import requests
-        from dagster_essentials.defs.assets import constants
-        import dagster as dg
-        
-        @dg.asset
-        def taxi_trips_file() -> None:
-            """
-              The raw parquet files for the taxi trips dataset. Sourced from the NYC Open Data portal.
-            """
-            month_to_fetch = '2023-03'
-            raw_trips = requests.get(
-                f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month_to_fetch}.parquet"
-            )
-        
-            with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch), "wb") as output_file:
-                output_file.write(raw_trips.content)
-        ```
-        
+```python
+import dagster as dg
+```
 
+	2. `taxi_trips_file` 함수 앞에 `@dg.asset` 데코레이터를 추가합니다. 이 시점에서 코드는 다음과 같아야 합니다.
+
+```python
+import requests
+from dagster_essentials.defs.assets import constants
+import dagster as dg
+        
+@dg.asset
+def taxi_trips_file() -> None:
+    """
+    The raw parquet files for the taxi trips dataset. Sourced from the NYC Open Data portal.
+    """
+    month_to_fetch = '2023-03'
+    raw_trips = requests.get(
+        f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month_to_fetch}.parquet"
+        )
+        
+    with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch), "wb") as output_file:
+         output_file.write(raw_trips.content)
+```
+        
 그게 다입니다. 첫 번째 Dagster 자산을 만들었습니다! `@dg.asset` 데코레이터를 사용하면 기존 Python 함수를 Dagster 자산으로 쉽게 전환할 수 있습니다.
 
 자산을 다시 확인하기 위해 `dg`를 사용할 수 있습니다.
@@ -219,9 +210,7 @@ All definitions loaded successfully.
 
 구체화가 어떻게 작동하는지 더 잘 이해하기 위해 방금 생성한 `taxi_trips_file` 자산과 해당 함수가 수행하는 작업을 다시 살펴보겠습니다.
 
-Python
-
-```
+```python
 @dg.asset
 def taxi_trips_file() -> None:
     """The raw parquet files for the taxi trips dataset. Sourced from the NYC Open Data portal."""
@@ -259,9 +248,7 @@ def taxi_trips_file() -> None:
 
 아직 2과에서 Dagster UI를 실행하지 않았다면, 명령줄을 사용하여 Dagster 프로젝트의 루트(최상위 `dagster-university/dagster_essentials` 디렉토리)에서 다음 명령을 실행하십시오.
 
-Bash
-
-```
+```bash
 dg dev
 ```
 
@@ -271,25 +258,42 @@ dg dev
 
 페이지는 현재 비어 있지만, 곧 더 흥미롭게 보일 것입니다. 자산 구체화를 시작해 봅시다.
 
-| 1단계                                                                                                                                                                                                                                                                                                                                                                                                  |                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| 상단 탐색 바에서 **자산**을 클릭하십시오. 열리는 페이지는 오른쪽에 있는 것과 같아야 합니다.  <br>  <br>**참고:** 이 페이지를 열었을 때 비어 있다면, **정의 다시 로드**를 클릭하십시오. 이것이 무엇을 하는지 나중에 더 자세히 설명하겠습니다.  <br>  <br>이 페이지에서는 프로젝트의 자산 목록과 다음과 같은 상위 수준 정보를 찾을 수 있습니다.  <br>  <br>- 자산이 속한 코드 위치 및 자산 그룹(나중에 다룰 것입니다)  <br>- 자산의 상태(이 경우 `taxi_trips_file`은 **한 번도 구체화되지 않음**)  <br>  <br>다음으로 **전역 자산 계보 보기** 링크를 클릭하십시오. 이것은 DAG를 볼 수 있는 전역 자산 그래프를 엽니다. | ![](./images/assets-overview.png) |
+1단계
+상단 탐색 바에서 **자산**을 클릭하십시오. 열리는 페이지는 오른쪽에 있는 것과 같아야 합니다. 
 
-| 2단계                                                                                                               |                                     |
-| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| 현재 자산이 하나뿐이므로 비어 있지만, 자산을 더 추가하고 종속성을 추가하면 더 흥미로워질 것입니다.  <br>  <br>또한, 자산의 독스트링에서 가져온 설명이 자산 내에 표시된다는 점에 유의하십시오! | ![](./images/global-asset-view.png) |
+**참고:** 이 페이지를 열었을 때 비어 있다면, **정의 다시 로드**를 클릭하십시오. 이것이 무엇을 하는지 나중에 더 자세히 설명하겠습니다. 
 
-| 3단계                                                                              |                                      |
-| -------------------------------------------------------------------------------- | ------------------------------------ |
-| 오른쪽 이미지에서 강조 표시된 **구체화** 버튼을 클릭하여 자산을 구체화하십시오. 이렇게 하면 자산 코드의 함수가 실행되어 자산이 생성됩니다. | ![](./images/materialize-button.png) |
+이 페이지에서는 프로젝트의 자산 목록과 다음과 같은 상위 수준 정보를 찾을 수 있습니다. 
 
-| 4단계                                                                                                                       |                                      |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| **구체화**를 클릭하면 오른쪽 이미지처럼 페이지 상단에 보라색 상자가 표시됩니다. 이는 실행이 성공적으로 시작되었음을 나타냅니다.  <br>  <br>**실행**은 하나 이상의 자산을 구체화하는 실행 인스턴스입니다. | ![](./images/materialized-asset.png) |
+- 자산이 속한 코드 위치 및 자산 그룹(나중에 다룰 것입니다) 
+- 자산의 상태(이 경우 `taxi_trips_file`은 **한 번도 구체화되지 않음**) 
 
-| 5단계                                                                                                                                                         |                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| Dagster 프로젝트의 `data/raw`로 이동하여 자산 구체화에 의해 생성된 파일을 확인하십시오: `data/raw/taxi_trips_2023-03.parquet`<br><br>**참고:** 다운로드에 시간이 걸릴 수 있으므로 이 파일이 즉시 나타나지 않을 수 있습니다. | ![](./images/data-raw-parquet.png) |
+다음으로 **전역 자산 계보 보기** 링크를 클릭하십시오. 이것은 DAG를 볼 수 있는 전역 자산 그래프를 엽니다.
+
+![](./images/assets-overview.png)
+
+2단계
+현재 자산이 하나뿐이므로 비어 있지만, 자산을 더 추가하고 종속성을 추가하면 더 흥미로워질 것입니다. 
+
+또한, 자산의 독스트링에서 가져온 설명이 자산 내에 표시된다는 점에 유의하십시오!
+
+![](./images/global-asset-view.png)
+
+3단계
+오른쪽 이미지에서 강조 표시된 **구체화** 버튼을 클릭하여 자산을 구체화하십시오. 이렇게 하면 자산 코드의 함수가 실행되어 자산이 생성됩니다.
+![](./images/materialize-button.png)
+
+4단계
+**구체화**를 클릭하면 오른쪽 이미지처럼 페이지 상단에 보라색 상자가 표시됩니다. 이는 실행이 성공적으로 시작되었음을 나타냅니다. 
+
+**실행**은 하나 이상의 자산을 구체화하는 실행 인스턴스입니다.
+![](./images/materialized-asset.png)
+
+5단계
+Dagster 프로젝트의 `data/raw`로 이동하여 자산 구체화에 의해 생성된 파일을 확인하십시오: `data/raw/taxi_trips_2023-03.parquet`
+
+**참고:** 다운로드에 시간이 걸릴 수 있으므로 이 파일이 즉시 나타나지 않을 수 있습니다.
+![](./images/data-raw-parquet.png)
 
 그게 다입니다! 첫 번째 자산을 성공적으로 구체화했습니다! 🎉
 
@@ -348,9 +352,7 @@ dg dev
 
 `assets/trips.py` 파일에서 `from dagster_essentials.defs.assets import constants` 줄을 주석 처리하여 다음과 같이 만드십시오.
 
-Python
-
-```
+```python
 import requests
 # from dagster_essentials.defs.assets import constants # <---- Import commented out here
 import dagster as dg
@@ -394,21 +396,31 @@ Dagster UI에서 **전역 자산 계보** 페이지로 이동하여 **구체�
 
 ## 로그를 사용하여 문제 해결
 
-| 1단계                                                                      |                                    |
-| ------------------------------------------------------------------------ | ---------------------------------- |
-| 로그에서 STEP_FAILURE 이벤트를 찾아 실패한 단계를 찾으십시오. 오른쪽 이미지에서 문제가 있는 단계를 강조 표시했습니다. | ![](./images/run-failure-step.png) |
+1단계
+로그에서 STEP_FAILURE 이벤트를 찾아 실패한 단계를 찾으십시오. 오른쪽 이미지에서 문제가 있는 단계를 강조 표시했습니다.
+![](./images/run-failure-step.png)
 
-| 2단계                                                                                                                                                                                                                                                                                                                                               |                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 실패한 단계의 **정보** 열에서 전체 메시지 보기 버튼을 클릭하여 전체 스택 추적을 표시합니다. 오른쪽과 같은 팝업 창이 표시됩니다.  <br>  <br>이 시점에서 스택 추적을 사용하여 오류의 원인을 식별하고 수정할 수 있습니다. 이 경우 `constants`를 임포트하지 않아 정의되지 않았기 때문입니다.<br><br>이 문제를 해결하려면 `trips.py` 파일에서 `from dagster_essentials.defs.assets import constants` 줄의 주석을 해제하고 저장하십시오.<br><br>Dagster UI에서 **확인**을 클릭하여 실행 로그에서 팝업 창을 닫으십시오. | ![](./images/stacktrace-error.png) |
+2단계
+실패한 단계의 **정보** 열에서 전체 메시지 보기 버튼을 클릭하여 전체 스택 추적을 표시합니다. 오른쪽과 같은 팝업 창이 표시됩니다. 
 
-| 3단계                                                                                                                                                   |                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| 임포트를 다시 추가하고 `trips.py` 파일을 저장한 후 실행을 다시 실행할 것입니다.<br><br>실행 세부 정보 페이지에서 페이지 오른쪽 상단 근처에 있는 **모두 다시 실행(*)** 버튼을 찾아 클릭하십시오. 이렇게 하면 실행의 모든 단계가 다시 실행됩니다. | ![](./images/highlighted-re-execute.png) |
+이 시점에서 스택 추적을 사용하여 오류의 원인을 식별하고 수정할 수 있습니다. 이 경우 `constants`를 임포트하지 않아 정의되지 않았기 때문입니다.
 
-| 4단계                                                                                                               |                                         |
-| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| 이 시점에서 실행은 자산을 성공적으로 구체화해야 합니다!  <br>  <br>실행 세부 정보 페이지는 오른쪽 이미지와 유사하게 표시되며, 루트(원래) 실행은 실패했지만 다시 실행은 성공했음을 나타냅니다. | ![](./images/re-execute-successful.png) |
+이 문제를 해결하려면 `trips.py` 파일에서 `from dagster_essentials.defs.assets import constants` 줄의 주석을 해제하고 저장하십시오.
+
+Dagster UI에서 **확인**을 클릭하여 실행 로그에서 팝업 창을 닫으십시오.
+![](./images/stacktrace-error.png)
+
+3단계
+임포트를 다시 추가하고 `trips.py` 파일을 저장한 후 실행을 다시 실행할 것입니다.
+
+실행 세부 정보 페이지에서 페이지 오른쪽 상단 근처에 있는 **모두 다시 실행(*)** 버튼을 찾아 클릭하십시오. 이렇게 하면 실행의 모든 단계가 다시 실행됩니다.
+![](./images/highlighted-re-execute.png)
+
+4단계
+이 시점에서 실행은 자산을 성공적으로 구체화해야 합니다! 
+
+실행 세부 정보 페이지는 오른쪽 이미지와 유사하게 표시되며, 루트(원래) 실행은 실패했지만 다시 실행은 성공했음을 나타냅니다.
+![](./images/re-execute-successful.png)
 
 ## 요약
 
