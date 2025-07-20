@@ -42,9 +42,7 @@
 
 DuckDB에는 파일에서 직접 쿼리하는 것과 같이 데이터를 수집하기 쉽게 만드는 여러 기능이 있습니다. `taxi_trips` 파일을 DuckDB 데이터베이스로 로드하려면 다음 SQL 쿼리를 실행할 수 있습니다.
 
-SQL
-
-```
+```sql
 create or replace table trips as (
     select
         VendorID as vendor_id,
@@ -69,30 +67,26 @@ create or replace table trips as (
 
 1. `trips.py` 파일 상단에서 `duckdb`와 `os`를 임포트하여 DuckDB 데이터베이스 파일이 저장되는 위치를 관리하고, `dagster._utils`에서 `backoff`를 임포트하여 DuckDB를 더 효과적으로 사용할 수 있도록 하세요.
     
-    Python
-    
-    ```
-    import duckdb
-    import os
-    import dagster as dg
-    from dagster._utils.backoff import backoff
-    ```
+```python
+import duckdb
+import os
+import dagster as dg
+from dagster._utils.backoff import backoff
+```
     
 2. 아래 코드를 복사하여 `trips.py` 파일 하단에 붙여넣으세요. 이 코드가 `taxi_trips_file` 및 `taxi_zones` 자산에 대한 자산 정의 코드와 유사하다는 점에 유의하세요.
     
-    Python
-    
-    ```
-    @dg.asset(
-        deps=["taxi_trips_file"]
-    )
-    def taxi_trips() -> None:
-        """
-          The raw taxi trips dataset, loaded into a DuckDB database
-        """
-        query = """
-            create or replace table trips as (
-              select
+```python
+@dg.asset(
+    deps=["taxi_trips_file"]
+)
+def taxi_trips() -> None:
+    """
+    The raw taxi trips dataset, loaded into a DuckDB database
+    """
+    query = """
+	    create or replace table trips as (
+	        select
                 VendorID as vendor_id,
                 PULocationID as pickup_zone_id,
                 DOLocationID as dropoff_zone_id,
@@ -107,16 +101,16 @@ create or replace table trips as (
             );
         """
     
-        conn = backoff(
-            fn=duckdb.connect,
+    conn = backoff(
+	    fn=duckdb.connect,
             retry_on=(RuntimeError, duckdb.IOException),
             kwargs={
                 "database": os.getenv("DUCKDB_DATABASE"),
             },
             max_retries=10,
         )
-        conn.execute(query)
-    ```
+    conn.execute(query)
+```
     
     이 코드가 무엇을 하는지 살펴보겠습니다.
     
@@ -166,9 +160,7 @@ create or replace table trips as (
 
 `taxi_trips` 자산이 제대로 구체화되었는지 확인하려면 DuckDB의 새로 생성된 `trips` 테이블에 액세스할 수 있습니다. 새 터미널 세션에서 Python REPL을 열고 다음 스니펫을 실행하십시오.
 
-Python
-
-```
+```python
 import duckdb
 conn = duckdb.connect(database="data/staging/data.duckdb") # assumes you're writing to the same destination as specified in .env.example
 conn.execute("select count(*) from trips").fetchall()
@@ -188,71 +180,63 @@ conn.execute("select count(*) from trips").fetchall()
 
 1. `dg`를 사용하여 지표 자산을 위한 새 파일을 생성하세요.
     
-    Bash
-    
-    ```
-    dg scaffold defs dagster.asset assets/metrics.py
-    ```
+```bash
+dg scaffold defs dagster.asset assets/metrics.py
+```
     
 2. `src/dagster_essentials/defs/assets/metrics.py` 파일 상단에 다음 임포트 문을 추가하세요.
     
-    Python
+```python
+import dagster as dg
     
-    ```
-    import dagster as dg
+import matplotlib.pyplot as plt
+import geopandas as gpd
     
-    import matplotlib.pyplot as plt
-    import geopandas as gpd
+import duckdb
+import os
     
-    import duckdb
-    import os
-    
-    from dagster_essentials.defs.assets import constants
-    ```
+from dagster_essentials.defs.assets import constants
+```
     
     익숙하지 않은 임포트가 있을 수 있지만, 사용할 때 다룰 것입니다.
     
 3. 다음으로, `manhattan_stats` 자산과 그 종속성을 정의하세요. 다음 코드를 복사하여 `metrics.py` 끝에 붙여넣으세요.
     
-    Python
-    
-    ```
-    @dg.asset(
-        deps=["taxi_trips", "taxi_zones"]
-    )
-    def manhattan_stats() -> None:
-    ```
+```python
+@dg.asset(
+    deps=["taxi_trips", "taxi_zones"]
+)
+def manhattan_stats() -> None:
+```
     
 4. 이제 `manhattan_stats`를 계산하는 로직을 추가해 봅시다. 아래 변경 사항을 반영하도록 `manhattan_stats` 자산 정의를 업데이트하세요.
+        
+```python
+@dg.asset(
+    deps=["taxi_trips", "taxi_zones"]
+)
+def manhattan_stats() -> None:
+    query = """
+        select
+            zones.zone,
+            zones.borough,
+            zones.geometry,
+            count(1) as num_trips,
+        from trips
+        left join zones on trips.pickup_zone_id = zones.zone_id
+        where borough = 'Manhattan' and geometry is not null
+        group by zone, borough, geometry
+    """
     
-    Python
+    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
+    trips_by_zone = conn.execute(query).fetch_df()
     
-    ```
-    @dg.asset(
-        deps=["taxi_trips", "taxi_zones"]
-    )
-    def manhattan_stats() -> None:
-        query = """
-            select
-                zones.zone,
-                zones.borough,
-                zones.geometry,
-                count(1) as num_trips,
-            from trips
-            left join zones on trips.pickup_zone_id = zones.zone_id
-            where borough = 'Manhattan' and geometry is not null
-            group by zone, borough, geometry
-        """
+    trips_by_zone["geometry"] = gpd.GeoSeries.from_wkt(trips_by_zone["geometry"])
+    trips_by_zone = gpd.GeoDataFrame(trips_by_zone)
     
-        conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
-        trips_by_zone = conn.execute(query).fetch_df()
-    
-        trips_by_zone["geometry"] = gpd.GeoSeries.from_wkt(trips_by_zone["geometry"])
-        trips_by_zone = gpd.GeoDataFrame(trips_by_zone)
-    
-        with open(constants.MANHATTAN_STATS_FILE_PATH, 'w') as output_file:
-            output_file.write(trips_by_zone.to_json())
-    ```
+    with open(constants.MANHATTAN_STATS_FILE_PATH, 'w') as output_file:
+        output_file.write(trips_by_zone.to_json())
+```
     
     코드를 살펴보겠습니다. 다음을 수행합니다.
     
@@ -281,26 +265,24 @@ UI에서 정의를 다시 로드하면 `manhattan_stats` 자산이 이제 자�
 
 1. `metrics.py` 파일 하단에 다음을 복사하여 붙여넣으십시오.
     
-    Python
+```python
+@dg.asset(
+    deps=["manhattan_stats"],
+)
+def manhattan_map() -> None:
+    trips_by_zone = gpd.read_file(constants.MANHATTAN_STATS_FILE_PATH)
     
-    ```
-    @dg.asset(
-        deps=["manhattan_stats"],
-    )
-    def manhattan_map() -> None:
-        trips_by_zone = gpd.read_file(constants.MANHATTAN_STATS_FILE_PATH)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    trips_by_zone.plot(column="num_trips", cmap="plasma", legend=True, ax=ax, edgecolor="black")
+    ax.set_title("Number of Trips per Taxi Zone in Manhattan")
     
-        fig, ax = plt.subplots(figsize=(10, 10))
-        trips_by_zone.plot(column="num_trips", cmap="plasma", legend=True, ax=ax, edgecolor="black")
-        ax.set_title("Number of Trips per Taxi Zone in Manhattan")
+    ax.set_xlim([-74.05, -73.90])  # Adjust longitude range
+    ax.set_ylim([40.70, 40.82])  # Adjust latitude range
     
-        ax.set_xlim([-74.05, -73.90])  # Adjust longitude range
-        ax.set_ylim([40.70, 40.82])  # Adjust latitude range
-    
-        # Save the image
-        plt.savefig(constants.MANHATTAN_MAP_FILE_PATH, format="png", bbox_inches="tight")
-        plt.close(fig)
-    ```
+    # Save the image
+    plt.savefig(constants.MANHATTAN_MAP_FILE_PATH, format="png", bbox_inches="tight")
+    plt.close(fig)
+```
     
     위의 코드는 다음을 수행합니다.
     
